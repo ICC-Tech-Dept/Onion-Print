@@ -1,0 +1,120 @@
+////////////////////////////////
+UninstallName
+GSview 5.0
+
+////////////////////////////////
+RegistryNew
+REGEDIT4
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Ghostgum]
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Ghostgum\GSview]
+"5.0"="c:\\users\\tk\\documents\\Ghostgum"
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\App Paths\gsview64.exe]
+@="c:\\users\\tk\\documents\\Ghostgum\\gsview\\gsview64.exe"
+"Path"="c:\\users\\tk\\documents\\Ghostgum\\gsview"
+
+[HKEY_CLASSES_ROOT\.ps]
+@="psfile"
+"Content Type"="application/postscript"
+
+[HKEY_CLASSES_ROOT\.eps]
+@="psfile"
+"Content Type"="application/postscript"
+
+[HKEY_CLASSES_ROOT\MIME\Database\Content Type\application/postscript]
+"Extension"=".ps"
+
+[HKEY_CLASSES_ROOT\psfile]
+@="PostScript"
+
+[HKEY_CLASSES_ROOT\psfile\shell]
+
+[HKEY_CLASSES_ROOT\psfile\shell\open]
+
+[HKEY_CLASSES_ROOT\psfile\shell\open\command]
+@=""c:\\users\\tk\\documents\\Ghostgum\\gsview\\gsview64.exe" "%1""
+
+[HKEY_CLASSES_ROOT\psfile\shell\print]
+
+[HKEY_CLASSES_ROOT\psfile\shell\print\command]
+@=""c:\\users\\tk\\documents\\Ghostgum\\gsview\\gsview64.exe" /p "%1""
+
+[HKEY_CLASSES_ROOT\psfile\DefaultIcon]
+@="c:\\users\\tk\\documents\\Ghostgum\\gsview\\gsview64.exe,3"
+
+////////////////////////////////
+RegistryOld
+REGEDIT4
+
+[HKEY_CLASSES_ROOT\.ps]
+"Content Type"="application/postscript"
+
+[HKEY_CLASSES_ROOT\.eps]
+"Content Type"="application/postscript"
+
+[HKEY_CLASSES_ROOT\MIME\Database\Content Type\application/postscript]
+"Extension"=".ps"
+
+////////////////////////////////
+ShellNew
+Group=C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Ghostgum
+
+Name=C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Ghostgum\GSview 5.0.LNK
+Path=c:\users\tk\documents\Ghostgum\gsview\gsview64.exe
+Description=GSview 5.0
+Arguments=
+
+Name=C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Ghostgum\GSview Readme 5.0.LNK
+Path=c:\users\tk\documents\Ghostgum\gsview\Readme.htm
+Description=GSview Readme 5.0
+
+
+////////////////////////////////
+ShellOld
+
+////////////////////////////////
+FileNew
+c:\users\tk\documents\Ghostgum\pstotext\pstotext.1
+c:\users\tk\documents\Ghostgum\pstotext\pstotext.txt
+c:\users\tk\documents\Ghostgum\pstotext\pstotxt3.dll
+c:\users\tk\documents\Ghostgum\pstotext\pstotxt3.exe
+c:\users\tk\documents\Ghostgum\gsview\gsview64.exe
+c:\users\tk\documents\Ghostgum\gsview\gsviewct.chm
+c:\users\tk\documents\Ghostgum\gsview\gsviewde.chm
+c:\users\tk\documents\Ghostgum\gsview\gsviewen.chm
+c:\users\tk\documents\Ghostgum\gsview\gsviewes.chm
+c:\users\tk\documents\Ghostgum\gsview\gsviewfr.chm
+c:\users\tk\documents\Ghostgum\gsview\gsviewgr.chm
+c:\users\tk\documents\Ghostgum\gsview\gsviewit.chm
+c:\users\tk\documents\Ghostgum\gsview\gsviewnl.chm
+c:\users\tk\documents\Ghostgum\gsview\gsviewru.chm
+c:\users\tk\documents\Ghostgum\gsview\gsviewsk.chm
+c:\users\tk\documents\Ghostgum\gsview\gsviewse.chm
+c:\users\tk\documents\Ghostgum\gsview\gsvw64ct.dll
+c:\users\tk\documents\Ghostgum\gsview\gsvw64de.dll
+c:\users\tk\documents\Ghostgum\gsview\gsvw64es.dll
+c:\users\tk\documents\Ghostgum\gsview\gsvw64fr.dll
+c:\users\tk\documents\Ghostgum\gsview\gsvw64gr.dll
+c:\users\tk\documents\Ghostgum\gsview\gsvw64it.dll
+c:\users\tk\documents\Ghostgum\gsview\gsvw64nl.dll
+c:\users\tk\documents\Ghostgum\gsview\gsvw64ru.dll
+c:\users\tk\documents\Ghostgum\gsview\gsvw64sk.dll
+c:\users\tk\documents\Ghostgum\gsview\gsvw64se.dll
+c:\users\tk\documents\Ghostgum\gsview\gvwgs64.exe
+c:\users\tk\documents\Ghostgum\gsview\gsvwrg64.exe
+c:\users\tk\documents\Ghostgum\gsview\uninstgs.exe
+c:\users\tk\documents\Ghostgum\gsview\printer.ini
+c:\users\tk\documents\Ghostgum\gsview\gsview64.ini
+c:\users\tk\documents\Ghostgum\gsview\zlib64.dll
+c:\users\tk\documents\Ghostgum\gsview\libbz2.dll
+c:\users\tk\documents\Ghostgum\gsview\gsprint.exe
+c:\users\tk\documents\Ghostgum\gsview\gsprint.htm
+c:\users\tk\documents\Ghostgum\gsview\epstool.htm
+c:\users\tk\documents\Ghostgum\gsview\Readme.htm
+c:\users\tk\documents\Ghostgum\gsview\gsview.css
+c:\users\tk\documents\Ghostgum\gsview\regorder.txt
+c:\users\tk\documents\Ghostgum\gsview\LICENCE
+
+////////////////////////////////
