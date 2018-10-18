@@ -27,10 +27,8 @@ def calculate_price(filepath):
     pdfFileProcessor = PdfFileReader(file(filepath,"rb"))
     #获取PDF页数
     pagesInPdfFile = pdfFileProcessor.getDocumentInfo().getNumPages()
-    #每一页的价格
-    pricePerPage = 0.1
     #总价格
-    totalPrice = pricePerPage * pagesInPdfFile
+    totalPrice = val['price'] * pagesInPdfFile
     return totalPrice
 
 def expire_text():
