@@ -10,7 +10,6 @@ import itchat
 import time
 import re
 import os
-from pyPDF import PdfFileReader
 
 # 全局变量，用于两个消息 handler 之间传值
 val = {
@@ -18,27 +17,33 @@ val = {
     'username': None,
     'price': 0,
     'submit_time': 0,
-    'price_per_page': 0.2
+    'price_per_page': 0.20,
     }
 
+# pdf 页码正则规则
+re_pdf_page_pattern = re.compile(r'/Type\s*/Page([^s]|$)', re.MULTILINE|re.DOTALL)
 
 def calculate_price(filepath):
     '''
     读取 pdf 页数计算价格
     '''
-    pdfFileProcessor = PdfFileReader(file(filepath,"rb"))
-    #获取PDF页数
-    pagesInPdfFile = pdfFileProcessor.getDocumentInfo().getNumPages()
-    #总价格
-    totalPrice = val['price_per_page'] * pagesInPdfFile
-    return totalPrice
+    global val
+    content = open(filepath,'rb').read().decode('utf-8', 'ignore')
+    
+    # 获取PDF页数
+    pages = len(re_pdf_page_pattern.findall(content))
+    
+    # 总价格
+    price = val['price_per_page'] * pages
+    return price
 
-def expire_text():
+def expire_test():
     '''
     测试是否超时 60 秒
     '''
-    statement = time.time() - var['submit_time']
-    if statement and statement > 60:
+    global val
+    statement = time.time() - val['submit_time']
+    if val['status'] and statement > 60:
         itchat.send(msg='操作超时，请重试', toUserName=val['username'])
         val['status'] = 0
 
@@ -50,6 +55,7 @@ def receive_file(msg):
     判断是否系统繁忙和文件类型；计算价格；发送二维码并更新全局变量值
     '''
     global val
+    print('file received:', msg.fileName)
     if val['status'] != 0:
         itchat.send(msg='系统繁忙，有其他人正在打印，请稍等 1 分钟噢', toUserName=msg.fromUserName)
     else:
@@ -72,8 +78,8 @@ def receive_file(msg):
             # 计算价格
             price = calculate_price(filename)
 
-            itchat.send(msg='计算后的价格为 %s\n请在60秒内扫描下方的二维码唷' % str(price), toUserName=msg.fromUserName)
-            itchat.send('@img@QRs/%s.jpg' % str(price).replace('.', '_'), toUserName=msg.fromUserName)
+            itchat.send(msg='计算后的价格为 %.2f\n请在60秒内扫描下方的二维码唷' % price, toUserName=msg.fromUserName)
+            itchat.send('@img@QRs/%.2f.jpg' % price, toUserName=msg.fromUserName)
 
             val['status'] = 1
             val['username'] = msg.fromUserName
@@ -88,13 +94,14 @@ def receive_print_file(msg):
     判断金额数量是否正确（其实不需要）
     '''
     global val
-
+    print('transaction received:', msg.text)
+    
     # 判断是否为微信支付消息
     if msg.text[:4] == '微信支付' and val['status'] == 1:
 
         # 获取金额
         price = float(msg.text[6:-1])
-        if price >= val['price']:
+        if price == val['price']:
             itchat.send('支付成功，打印中....', toUserName=val['username'])
         else:
             itchat.send('系统错误，请联系管理员', toUserName=val['username'])
@@ -111,4 +118,4 @@ while True:
     time.sleep(1)
 
     # 检测交易是否超时
-    expire_text()
+    expire_test()
