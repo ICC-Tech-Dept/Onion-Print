@@ -18,6 +18,7 @@ val = {
     'username': None,
     'price': 0,
     'submit_time': 0,
+    'price_per_page': 0.2
     }
 
 
@@ -29,16 +30,14 @@ def calculate_price(filepath):
     #获取PDF页数
     pagesInPdfFile = pdfFileProcessor.getDocumentInfo().getNumPages()
     #总价格
-    totalPrice = val['price'] * pagesInPdfFile
+    totalPrice = val['price_per_page'] * pagesInPdfFile
     return totalPrice
 
 def expire_text():
     '''
     测试是否超时 60 秒
     '''
-    # TODO: 补充逻辑
-    statement = None
-
+    statement = time.time() - var['submit_time']
     if statement and statement > 60:
         itchat.send(msg='操作超时，请重试', toUserName=val['username'])
         val['status'] = 0
@@ -95,7 +94,7 @@ def receive_print_file(msg):
 
         # 获取金额
         price = float(msg.text[6:-1])
-        if price == val['price']:
+        if price >= val['price']:
             itchat.send('支付成功，打印中....', toUserName=val['username'])
         else:
             itchat.send('系统错误，请联系管理员', toUserName=val['username'])
