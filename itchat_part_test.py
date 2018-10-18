@@ -10,7 +10,7 @@ import itchat
 import time
 import re
 import os
-
+from pyPDF import PdfFileReader
 # 全局变量，用于两个消息 handler 之间传值
 val = {
     'status': 0,
@@ -24,8 +24,14 @@ def calculate_price(filepath):
     '''
     读取 pdf 页数计算价格
     '''
-    # TODO: 通过页数计算 pdf 价格
-    return 0.01
+    pdfFileProcessor = PdfFileReader(file(filepath,"rb"))
+    #获取PDF页数
+    pagesInPdfFile = pdfFileProcessor.getDocumentInfo().getNumPages()
+    #每一页的价格
+    pricePerPage = 0.1
+    #总价格
+    totalPrice = pricePerPage * pagesInPdfFile
+    return totalPrice
 
 def expire_text():
     '''
@@ -33,7 +39,7 @@ def expire_text():
     '''
     # TODO: 补充逻辑
     statement = None
-    
+
     if statement and statement > 60:
         itchat.send(msg='操作超时，请重试', toUserName=val['username'])
         val['status'] = 0
@@ -55,7 +61,7 @@ def receive_file(msg):
         # 判断文件是否为空或者格式不正确
         if not filename or not re.search('\.pdf$', filename):
             itchat.send(msg='只能接受 pdf 文件呀！', toUserName=msg.fromUserName)
-            
+
         else:
             itchat.send(msg='收到文件: "%s"\n正在处理中，请稍后.....' % filename, toUserName=msg.fromUserName)
 
@@ -67,10 +73,10 @@ def receive_file(msg):
 
             # 计算价格
             price = calculate_price(filename)
-            
+
             itchat.send(msg='计算后的价格为 %s\n请在60秒内扫描下方的二维码唷' % str(price), toUserName=msg.fromUserName)
             itchat.send('@img@QRs/%s.jpg' % str(price).replace('.', '_'), toUserName=msg.fromUserName)
-            
+
             val['status'] = 1
             val['username'] = msg.fromUserName
             val['price'] = price
@@ -84,7 +90,7 @@ def receive_print_file(msg):
     判断金额数量是否正确（其实不需要）
     '''
     global val
-    
+
     # 判断是否为微信支付消息
     if msg.text[:4] == '微信支付' and val['status'] == 1:
 
