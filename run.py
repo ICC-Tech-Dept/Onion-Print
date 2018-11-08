@@ -29,7 +29,8 @@ re_pdf_page_pattern = re.compile(r'/Type\s*/Page([^s]|$)', re.MULTILINE|re.DOTAL
 # log 相关设置
 logging.basicConfig(level=logging.DEBUG, filename='%s.log' % datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'),
                     filemode='w', format='%(name)s - %(levelname)s - %(message)s')
-
+transaction_logger = logging.Logger(__name__)
+transaction_logger.addHandler(logging.FileHandler('payment_%s.log' % datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'), mode='w'))
 
 def calculate_price(filepath):
     '''
@@ -81,9 +82,11 @@ def receive_file(msg):
             # 下载文件
             msg.text(filename)
             logging.info('file downloaded as <%s>' % filename)
+            transaction_logger.info('%s requested file %s' % (msg.nickName, filename))
             # 计算价格
             price = calculate_price(filename)
             logging.info('price calculated as <%.2f>' % price)
+            transaction_logger.info('%s price calculated as %.2f' % (filename, price))
             itchat.send(msg='计算后的价格为 %.2f\n请在60秒内扫描下方的二维码唷' % price, toUserName=msg.fromUserName)
             itchat.send('@img@QRs/%.2f.jpg' % price, toUserName=msg.fromUserName)
             logging.info('QR image sent')
@@ -107,15 +110,19 @@ def receive_print_file(msg):
     if msg.text[:6] == '[店员消息]' and val['status'] == 1:
         # 获取金额
         price = float(msg.text[10:-1])
+        transaction_logger.info('transaction received: %.2f' % price)
         if price == val['price']:
             itchat.send('支付成功，打印中....', toUserName=val['username'])
             logging.info('payment success as "支付成功，打印中...."')
             os.system('.\\gsview\\gsprint.exe ".\\%s"' % val['filename'])
+            transaction_logger.info('request finished')
         else:
             logging.error('user request rejected as "系统错误，请联系管理员"')
             itchat.send('系统错误，请联系管理员', toUserName=val['username'])
+            transaction_logger.info('request failed')
     else:
         logging.error('user request rejected, 收款信息错误')
+        transaction_logger.info('transaction failed')
     val['status'] = 0
 
 
