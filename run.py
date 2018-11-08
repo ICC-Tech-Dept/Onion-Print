@@ -1,11 +1,12 @@
 '''
 主程序
 
-11-08-2018: 添加了logging
+11-08-2018: 修复了3张无法打印的bug
+
 '''
 
 __author__ = '-T.K.-'
-__last_modify__ = '10/18/2018'
+__last_modify__ = '11/08/2018'
 
 import itchat
 import time
@@ -82,7 +83,7 @@ def receive_file(msg):
             # 下载文件
             msg.text(filename)
             logging.info('file downloaded as <%s>' % filename)
-            transaction_logger.info('%s requested file %s' % (msg.nickName, filename))
+            transaction_logger.info('%s requested file %s' % (msg.fromUserName, filename))
             # 计算价格
             price = calculate_price(filename)
             logging.info('price calculated as <%.2f>' % price)
@@ -111,14 +112,14 @@ def receive_print_file(msg):
         # 获取金额
         price = float(msg.text[10:-1])
         transaction_logger.info('transaction received: %.2f' % price)
-        if price == val['price']:
+        if price == round(val['price'],2):
             itchat.send('支付成功，打印中....', toUserName=val['username'])
             logging.info('payment success as "支付成功，打印中...."')
             os.system('.\\gsview\\gsprint.exe ".\\%s"' % val['filename'])
             transaction_logger.info('request finished')
         else:
             logging.error('user request rejected as "系统错误，请联系管理员"')
-            itchat.send('系统错误，请联系管理员', toUserName=val['username'])
+            itchat.send('系统错误，请联系管理员\n电话：13522865140', toUserName=val['username'])
             transaction_logger.info('request failed')
     else:
         logging.error('user request rejected, 收款信息错误')
