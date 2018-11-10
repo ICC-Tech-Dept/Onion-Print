@@ -84,7 +84,7 @@ def receive_file(msg):
             # 下载文件
             msg.text(filename)
             logging.info('file downloaded as <%s>' % filename)
-            transaction_logger.info('%s requested file %s' % (msg.fromUserName, filename))
+            transaction_logger.info('%s requested file %s' % (itchat.search_friends(userName=msg['FromUserName'])['NickName'], filename))
             # 计算价格
             price = calculate_price(filename)
             logging.info('price calculated as <%.2f>' % price)
