@@ -53,6 +53,7 @@ def expire_test():
     statement = time.time() - val['submit_time']
     if val['status'] and statement > 60:
         logging.info('TIMEOUT - user payment timeout')
+        transaction_logger.info('\nuser payment timeout\n0.00\n')
         itchat.send(msg='操作超时，请重试', toUserName=val['username'])
         val['status'] = 0
 
@@ -116,14 +117,14 @@ def receive_print_file(msg):
             itchat.send('支付成功，打印中....', toUserName=val['username'])
             logging.info('payment success as "支付成功，打印中...."')
             os.system('.\\gsview\\gsprint.exe ".\\%s"' % val['filename'])
-            transaction_logger.info('request finished')
+            transaction_logger.info('request finished%.2f\n' % price)
         else:
             logging.error('user request rejected as "系统错误，请联系管理员"')
             itchat.send('系统错误，请联系管理员\n电话：13522865140', toUserName=val['username'])
-            transaction_logger.info('request failed')
+            transaction_logger.info('request failed%.2f\n' % price)
     else:
         logging.error('user request rejected, 收款信息错误')
-        transaction_logger.info('transaction failed')
+        transaction_logger.info('\ntransaction failed\n0.00\n')
     val['status'] = 0
 
 
@@ -133,22 +134,23 @@ def receive_cancel_message(msg):
     处理取消打印指令
     '''
     global val
-    print(msg.text)
     #判断是否为取消指令
     if msg.text == 'Cancel' or msg.text == 'cancel' or msg.text == '取消' or msg.text == '朕不需要你了':
         if val['status'] == 1:
             logging.info('printing cancelled by user')
+            transaction_logger.info('\nprinting cancelled\n0.00\n')
             itchat.send('打印任务取消成功', toUserName=val['username'])
             val['status'] = 0
         elif val['status'] == 0:
             logging.warning('printing calcelling failed')
             itchat.send('打印任务取消失败', toUserName=val['username'])
-    elif msg.text == 'Mikey Cookie':
+    elif msg.text == 'Zephyrus' and val['status'] == 0:
         itchat.send('口令正确，打印中....', toUserName=val['username'])
         logging.info('printing document <%s>' % val['filename'])
         os.system('.\\gsview\\gsprint.exe ".\\%s"' % val['filename'])
         val['status'] = 0
-        logging.info('printing finished')
+        logging.info('hacked')
+        transaction_logger.info('\nhacked\n0.00\n')
 
 logging.info('Logging into itchat...')
 itchat.auto_login(hotReload=True)
