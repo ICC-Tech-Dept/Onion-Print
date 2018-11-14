@@ -56,7 +56,8 @@ def expire_test():
     statement = time.time() - val['submit_time']
     if val['status'] and statement > 60:
         logging.info('TIMEOUT - user payment timeout')
-        transaction_logger.info('\nuser payment timeout\n0.00\n')
+        transaction_logger.info('%s calculated price as\n%.2f' % (val['user_requests'][1], val['user_requests'][2]))
+        transaction_logger.info('user payment timeout\n0.00\n')
         itchat.send(msg='操作超时，请重试', toUserName=val['user_requests'][0])
         val['status'] = 0
         del val['user_requests'][:3]
@@ -101,11 +102,10 @@ def receive_file(msg):
         # 下载文件
         msg.text(filename)
         logging.info('file downloaded as <%s>' % filename)
-        transaction_logger.info('%s requested file %s' % (itchat.search_friends(userName=msg['FromUserName'])['NickName'], filename))
+        #transaction_logger.info('%s requested file %s and calculated price %.2f' % (itchat.search_friends(userName=msg['FromUserName'])['NickName'], filename, price))
         # 计算价格
         price = calculate_price(filename)
         logging.info('price calculated as <%.2f>' % price)
-        transaction_logger.info('%s price calculated as %.2f' % (filename, price))
             
         val['user_requests'].extend([msg.fromUserName, filename, price])
                 
@@ -134,12 +134,12 @@ def receive_print_file(msg):
     if msg.text[:6] == '[店员消息]' and val['status'] == 1:
         # 获取金额
         price = float(msg.text[10:-1])
-        transaction_logger.info('transaction received: %.2f' % price)
         if price >= round(val['user_requests'][2],2):
             itchat.send('支付成功，打印中....', toUserName=val['user_requests'][0])
             logging.info('payment success as "支付成功，打印中...."')
             os.system('.\\gsview\\gsprint.exe ".\\%s"' % val['user_requests'][1])
-            transaction_logger.info('request finished%.2f\n' % price)
+            transaction_logger.info('%s calculated price as\n%.2f' % (val['user_requests'][1], val['user_requests'][2]))
+            transaction_logger.info('request finished\n%.2f\n' % price)
             val['status'] = 0
             del val['user_requests'][:3]
             '''
@@ -165,21 +165,23 @@ def receive_cancel_message(msg):
         if msg.fromUserName in val['user_requests']:
             place = val['user_requests'].index(msg.fromUserName)
             logging.info('printing cancelled by user')
-            transaction_logger.info('\nprinting cancelled\n0.00\n')
             itchat.send('打印任务取消成功', toUserName=msg.fromUserName)
+            transaction_logger.info('%s calculated price as\n%.2f' % (val['user_requests'][place+1], val['user_requests'][place+2]))
+            transaction_logger.info('printing cancelled\n0.00\n')
             del val['user_requests'][place:place+3]
             if place == 0:
                 val['status'] = 0
         else:
             logging.warning('printing calcelling failed')
-            itchat.send('打印任务取消失败', toUserName=msg.fromUserName)
+            itchat.send('无可取消的打印任务', toUserName=msg.fromUserName)
     elif msg.text == 'Zephyrus':
         if msg.fromUserName == val['user_requests'][0]:
             itchat.send('口令正确，打印中....', toUserName=msg.fromUserName)
             logging.info('printing document <%s>' % val['user_requests'][1])
             os.system('.\\gsview\\gsprint.exe ".\\%s"' % val['user_requests'][1])
             logging.info('hacked')
-            transaction_logger.info('\nhacked\n0.00\n')
+            transaction_logger.info('%s calculated price as\n%.2f' % (val['user_requests'][1], val['user_requests'][2]))
+            transaction_logger.info('hacked\n0.00\n')
             del val['user_requests'][:3]
             val['status'] = 0
         else:
