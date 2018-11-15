@@ -244,7 +244,7 @@ def receive_cancel_message(msg):
                 del val['user_requests'][0]
     if msg.text == '使用攻略' or msg.text == 'user guide' or msg.text == 'User Guide' or msg.text == 'user_guide':
         itchat.send_file('Files/user_guide.pdf', toUserName=msg.fromUserName)
-    if msg.text == '双面':
+    if msg.text == '双面' and ((msg.fromUserName, None, 0, 1, 0) not in val['user_requests']):
         itchat.send('已收到双面打印请求，请在60秒内发送文件', toUserName=msg.fromUserName)
         val['user_requests'].append((msg.fromUserName, None, 0, 1, 0))
     if msg.text == '继续' and msg.fromUserName == val['user_requests'][0][0] and val['status'] == 3:
