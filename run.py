@@ -94,6 +94,25 @@ def qr_send():
             val['status'] = 2
 
 
+def split_file():
+    global val
+    pdfFileWriter1 = PdfFileWriter()
+    pdfFileWriter2 = PdfFileWriter()
+    pdfFileReader = PdfFileReader(val['user_requests'][0][1])
+    num_pages = pdfFileReader.getNumPages()
+    if num_pages == 1:
+        return False
+    else:
+        for i in range(0, (num_pages+1)//2):
+            pageObj1 = pdfFileReader.getPage(i * 2)
+            pdfFileWriter1.addPage(pageObj1)
+            if (i+1) * 2 <= num_pages:
+                pageObj2 = pdfFileReader.getPage(i * 2 + 1)
+                pdfFileWriter2.addPage(pageObj2)
+        pdfFileWriter1.write(open((val['user_requests'][0][1])[:-4]+'1.pdf', 'wb'))
+        pdfFileWriter2.write(open((val['user_requests'][0][1])[:-4]+'2.pdf', 'wb'))
+        return True
+    
     
 
     
@@ -167,17 +186,15 @@ def receive_print_file(msg):
                 del val['user_requests'][0]
             elif val['status'] == 2:
                 val['status'] = 4
-                itchat.send('支付成功，打印正面中....\n待第一面打印完成后，将打印出的纸张直接放到下方纸摞上\n！注意不要改变纸张方向\n放好后发送"继续"以打印反面', toUserName=val['user_requests'][0][0])
-                pdfFileWriter = PdfFileWriter()
-                pdfFileReader = PdfFileReader(val['user_requests'][0][1])
-                val['num_pages'] = pdfFileReader.getNumPages()
-                for i in range(0, int(val['num_pages']/2)):
-                    pageObj1 = pdfFileReader.getPage(2*i)
-                    pdfFileWriter.addPage(pageObj1)
-                pdfFileWriter.write(open((val['user_requests'][0][1])[:-4]+'1.pdf', 'wb'))
-                os.system('.\\gsview\\gsprint.exe ".\\%s"' % (val['user_requests'][0][1])[:-4]+'1.pdf')
-                logging.info('payment success as "支付成功，打印中...."')
-                val['status'] = 3
+                if split_file():
+                    itchat.send('支付成功，打印正面中....\n待第一面打印完成后，将打印出的纸张直接放到下方纸摞上\n！注意不要改变纸张方向\n放好后发送"继续"以打印反面', toUserName=val['user_requests'][0][0])
+                    os.system('.\\gsview\\gsprint.exe ".\\%s"' % (val['user_requests'][0][1])[:-4]+'1.pdf')
+                    logging.info('payment success as "支付成功，打印中...."')
+                    val['status'] = 3
+                else:
+                    itchat.send('文件只有一页，打印任务取消', toUserName=val['user_requests'][0][0])
+                    val['status'] = 0
+                    del val['user_requests'][0]
 
 
 @itchat.msg_register(itchat.content.TEXT, isFriendChat=True)
@@ -188,12 +205,16 @@ def receive_cancel_message(msg):
     global val
     #判断是否为取消指令或口令
     if msg.text == 'Cancel' or msg.text == 'cancel' or msg.text == '取消' or msg.text == '朕不需要你了':
-        if msg.fromUserName in val['user_requests']:
-            place = val['user_requests'].index(msg.fromUserName)
+        place = -1
+        for n, element in enumerate(val['user_requests']):
+            if msg.fromUserName == element[0]:
+                place = n
+                break
+        if place >= 0:
             logging.info('printing cancelled by user')
             itchat.send('打印任务取消成功', toUserName=msg.fromUserName)
-            transaction_logger.info('%s calculated price as\n%.2f' % (val['user_requests'][place+1], val['user_requests'][place+2]))
-            transaction_logger.info('printing cancelled\n0.00\n')
+            #transaction_logger.info('%s calculated price as\n%.2f' % (val['user_requests'][place][place+1], val['user_requests'][place+2]))
+            #transaction_logger.info('printing cancelled\n0.00\n')
             del val['user_requests'][place]
             if place == 0:
                 val['status'] = 0
@@ -212,17 +233,15 @@ def receive_cancel_message(msg):
             val['status'] = 0
         if val['status'] == 2:
             val['status'] = 4
-            itchat.send('支付成功，打印正面中....\n待第一面打印完成后，将打印出的纸张直接放到下方纸摞上\n！注意不要改变纸张方向\n放好后发送"继续"以打印反面', toUserName=val['user_requests'][0][0])
-            pdfFileWriter = PdfFileWriter()
-            pdfFileReader = PdfFileReader(val['user_requests'][0][1])
-            val['num_pages'] = pdfFileReader.getNumPages()
-            for i in range(0, int(val['num_pages']/2)):
-                pageObj1 = pdfFileReader.getPage(2*i)
-                pdfFileWriter.addPage(pageObj1)
-            pdfFileWriter.write(open((val['user_requests'][0][1])[:-4]+'1.pdf', 'wb'))
-            os.system('.\\gsview\\gsprint.exe ".\\%s"' % (val['user_requests'][0][1])[:-4]+'1.pdf')
-            logging.info('payment success as "支付成功，打印中...."')
-            val['status'] = 3   
+            if split_file():
+                itchat.send('支付成功，打印正面中....\n待第一面打印完成后，将打印出的纸张直接放到下方纸摞上\n！注意不要改变纸张方向\n放好后发送"继续"以打印反面', toUserName=val['user_requests'][0][0])
+                os.system('.\\gsview\\gsprint.exe ".\\%s"' % (val['user_requests'][0][1])[:-4]+'1.pdf')
+                logging.info('payment success as "支付成功，打印中...."')
+                val['status'] = 3
+            else:
+                itchat.send('文件只有一页，打印任务取消', toUserName=val['user_requests'][0][0])
+                val['status'] = 0
+                del val['user_requests'][0]
     if msg.text == '使用攻略' or msg.text == 'user guide' or msg.text == 'User Guide' or msg.text == 'user_guide':
         itchat.send_file('Files/user_guide.pdf', toUserName=msg.fromUserName)
     if msg.text == '双面':
@@ -230,14 +249,8 @@ def receive_cancel_message(msg):
         val['user_requests'].append((msg.fromUserName, None, 0, 1, 0))
     if msg.text == '继续' and msg.fromUserName == val['user_requests'][0][0] and val['status'] == 3:
         itchat.send('打印反面中.....', toUserName=val['user_requests'][0][0])
-        pdfFileWriter = PdfFileWriter()
-        pdfFileReader = PdfFileReader(val['user_requests'][0][1])
-        for i in range(0, int(val['num_pages']/2)):    
-            pageObj2 = pdfFileReader.getPage(2*i+1)
-            pdfFileWriter.addPage(pageObj2)
-        pdfFileWriter.write(open((val['user_requests'][0][1])[:-4]+'2.pdf', 'wb'))
         os.system('.\\gsview\\gsprint.exe ".\\%s"' % (val['user_requests'][0][1])[:-4]+'2.pdf')
-        transaction_logger.info('%s calculated price as\n%.2f' % (val['user_requests'][0][1], val['user_requests'][0][2]))
+        #transaction_logger.info('%s calculated price as\n%.2f' % (val['user_requests'][0][1], val['user_requests'][0][2]))
         #transaction_logger.info('request finished\n%.2f\n' % price)
         val['status'] = 0
         del val['user_requests'][0]
