@@ -58,8 +58,8 @@ def expire_test():
     statement = time.time() - val['submit_time']
     if (val['status'] == 1 or val['status'] == 2) and statement > 60:
         logging.info('TIMEOUT - user payment timeout')
-        transaction_logger.info('%s calculated price as\n%.2f' % (val['user_requests'][0][1], val['user_requests'][0][2]))
-        transaction_logger.info('user payment timeout\n0.00\n')
+        #transaction_logger.info('%s calculated price as\n%.2f' % (val['user_requests'][0][1], val['user_requests'][0][2]))
+        #transaction_logger.info('user payment timeout\n0.00\n')
         itchat.send(msg='操作超时，请重试', toUserName=val['user_requests'][0][0])
         val['status'] = 0
         del val['user_requests'][0]
@@ -72,8 +72,8 @@ def dual_expire_test():
     statement = time.time() - val['dual_submit_time']
     if (val['status'] == 1 or val['status'] == 2) and statement > 60:
         logging.info('TIMEOUT - user file sending timeout')
-        transaction_logger.info('%s calculated price as\n%.2f' % (val['user_requests'][0][1], val['user_requests'][0][2]))
-        transaction_logger.info('user payment timeout\n0.00\n')
+        #transaction_logger.info('%s calculated price as\n%.2f' % (val['user_requests'][0][1], val['user_requests'][0][2]))
+        #transaction_logger.info('user payment timeout\n0.00\n')
         itchat.send(msg='操作超时，请重试', toUserName=val['user_requests'][0][0])
         val['status'] = 0
         del val['user_requests'][0]
@@ -104,13 +104,14 @@ def split_file():
         return False
     else:
         for i in range(0, (num_pages+1)//2):
+            if (i+1) * 2 <= num_pages:
+                pageObj2 = pdfFileReader.getPage((-i * 2 - 1)+(num_pages)//2*2)
+                pageObj2.rotateClockwise(180)
+                pdfFileWriter2.addPage(pageObj2)
             pageObj1 = pdfFileReader.getPage(i * 2)
             pdfFileWriter1.addPage(pageObj1)
-            if (i+1) * 2 <= num_pages:
-                pageObj2 = pdfFileReader.getPage(i * 2 + 1)
-                pdfFileWriter2.addPage(pageObj2)
-        pdfFileWriter1.write(open((val['user_requests'][0][1])[:-4]+'1.pdf', 'wb'))
-        pdfFileWriter2.write(open((val['user_requests'][0][1])[:-4]+'2.pdf', 'wb'))
+        pdfFileWriter1.write(open((val['user_requests'][0][1])[:-4]+'2.pdf', 'wb'))
+        pdfFileWriter2.write(open((val['user_requests'][0][1])[:-4]+'1.pdf', 'wb'))
         return True
     
     
@@ -146,7 +147,7 @@ def receive_file(msg):
         logging.info('price calculated as <%.2f>' % price)
         if (msg.fromUserName, None, 0, 1, 0) in val['user_requests']:
             place = val['user_requests'].index((msg.fromUserName, None, 0, 1, 0))
-            val['user_requests'][place] = (msg.fromUserName, filename, price, 1, 0)
+            val['user_requests'][place] = (msg.fromUserName, filename, price, 2, 0)
             itchat.send(msg='可能有其他人在支付，请稍等...', toUserName=msg.fromUserName)
             '''
             fake_user_requests = val['user_requests']
@@ -175,13 +176,14 @@ def receive_print_file(msg):
     if msg.text[:6] == '[店员消息]':
         # 获取金额
         price = float(msg.text[10:-1])
+        transaction_logger.info(price)
         if price >= round(val['user_requests'][0][2],2):
             if val['status'] == 1:
                 itchat.send('支付成功，打印中....', toUserName=val['user_requests'][0][0])
                 logging.info('payment success as "支付成功，打印中...."')
                 os.system('.\\gsview\\gsprint.exe ".\\%s"' % val['user_requests'][0][1])
-                transaction_logger.info('%s calculated price as\n%.2f' % (val['user_requests'][0][1], val['user_requests'][0][2]))
-                transaction_logger.info('request finished\n%.2f\n' % price)
+                #transaction_logger.info('%s calculated price as\n%.2f' % (val['user_requests'][0][1], val['user_requests'][0][2]))
+                #transaction_logger.info('request finished\n%.2f\n' % price)
                 val['status'] = 0
                 del val['user_requests'][0]
             elif val['status'] == 2:
@@ -227,8 +229,8 @@ def receive_cancel_message(msg):
             logging.info('printing document <%s>' % val['user_requests'][0][1])
             os.system('.\\gsview\\gsprint.exe ".\\%s"' % val['user_requests'][0][1])
             logging.info('hacked')
-            transaction_logger.info('%s calculated price as\n%.2f' % (val['user_requests'][0][1], val['user_requests'][0][2]))
-            transaction_logger.info('hacked\n0.00\n')
+            #transaction_logger.info('%s calculated price as\n%.2f' % (val['user_requests'][0][1], val['user_requests'][0][2]))
+            #transaction_logger.info('hacked\n0.00\n')
             del val['user_requests'][0]
             val['status'] = 0
         if val['status'] == 2:
@@ -247,6 +249,7 @@ def receive_cancel_message(msg):
     if msg.text == '双面' and ((msg.fromUserName, None, 0, 1, 0) not in val['user_requests']):
         itchat.send('已收到双面打印请求，请在60秒内发送文件', toUserName=msg.fromUserName)
         val['user_requests'].append((msg.fromUserName, None, 0, 1, 0))
+        val['dual_submit_time'] = time.time()
     if msg.text == '继续' and msg.fromUserName == val['user_requests'][0][0] and val['status'] == 3:
         itchat.send('打印反面中.....', toUserName=val['user_requests'][0][0])
         os.system('.\\gsview\\gsprint.exe ".\\%s"' % (val['user_requests'][0][1])[:-4]+'2.pdf')
