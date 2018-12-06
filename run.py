@@ -45,7 +45,7 @@ def calculate_price(filepath):
     global val
     content = open(filepath,'rb').read().decode('utf-8', 'ignore')
     # 获取PDF页数
-    pages = len(re_pdf_page_pattern.findall(content))
+    pages = PdfFileReader(filepath).getNumPages()
     # 总价格
     price = val['price_per_page'] * pages
     return price
