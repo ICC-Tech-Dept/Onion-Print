@@ -138,7 +138,7 @@ def receive_print_file(msg):
         if price >= round(val['user_requests'][0][2],2):
             if val['status'] == 1:
                 itchat.send('支付成功，打印中....', toUserName=val['user_requests'][0][0])
-                logging.info('payment success as "支付成功，打印中...."')
+                logging.info('payment success as "支付成功，单面打印中...."')
                 os.system('.\\gsview\\gsprint.exe ".\\%s"' % val['user_requests'][0][1])
                 val['status'] = 0
                 del val['user_requests'][0]
@@ -147,10 +147,12 @@ def receive_print_file(msg):
                 if split_file():
                     itchat.send('支付成功，打印正面中....\n待第一面打印完成后，将打印出的纸张直接放到下方纸摞上\n！注意不要改变纸张方向\n放好后发送"继续"以打印反面', toUserName=val['user_requests'][0][0])
                     os.system('.\\gsview\\gsprint.exe ".\\%s"' % (val['user_requests'][0][1])[:-4]+'1.pdf')
-                    logging.info('payment success as "支付成功，打印中...."')
+                    logging.info('payment success as "支付成功，双面打印中...."')
                     val['status'] = 3
                 else:
-                    itchat.send('文件只有一页，打印任务取消', toUserName=val['user_requests'][0][0])
+                    itchat.send('文件只有一页，打印任务转换为单面打印', toUserName=val['user_requests'][0][0])
+                    logging.info('payment success as "支付成功，单面打印中...."')
+                    os.system('.\\gsview\\gsprint.exe ".\\%s"' % val['user_requests'][0][1])
                     val['status'] = 0
                     del val['user_requests'][0]
 
@@ -180,7 +182,7 @@ def receive_cancel_message(msg):
     if msg.text == '使用攻略' or msg.text == 'user guide' or msg.text == 'User Guide' or msg.text == 'user_guide':
         itchat.send_file('Files/user_guide.pdf', toUserName=msg.fromUserName)
     if msg.text == '双面' and msg.fromUserName == val['user_requests'][0][0] and val['status'] == 1:
-        itchat.send('已收到双面打印请求', toUserName=msg.fromUserName)
+        itchat.send('已收到双面打印请求，请尽快扫码', toUserName=msg.fromUserName)
         val['status'] = 2
     if msg.text == '继续' and msg.fromUserName == val['user_requests'][0][0] and val['status'] == 3:
         itchat.send('打印反面中.....', toUserName=val['user_requests'][0][0])
