@@ -1,15 +1,15 @@
 '''
 主程序
 
-修复bug  优化双面打印  取消除交钱报告的一切transaction logger
+修复bug  优化双面打印
 
-正式版V1.0
+正式版V1.0.1
 
 '''
 
 __author__ = '-T.K.-'
 __modefier__= 'DessertFox-M'
-__last_modify__ = '12/08/2018'
+__last_modify__ = '12/14/2018'
 
 import itchat
 import time
@@ -23,8 +23,10 @@ from PyPDF2 import PdfFileReader, PdfFileWriter
 val = {
     'status': 0,
     'submit_time': 0,
+    'dual_submit_time': 0,
     'price_per_page': 0.30,
     'user_requests': [],
+    'file_number': 0,
     }
 
 # pdf 页码正则规则
@@ -51,14 +53,24 @@ def expire_test():
         del val['user_requests'][0]
 
 
+def dual_expire_test():
+    global val
+    statement = time.time() - val['dual_submit_time']
+    if val['status'] == 3 and statement > 600:
+        logging.info('TIMEOUT - user payment timeout')
+        itchat.send(msg='操作超时，双面打印已取消', toUserName=val['user_requests'][0][0])
+        val['status'] = 0
+        del val['user_requests'][0]
+        
+
 def qr_send():
     '''
     读取待打印名单发送二维码
     '''
     global val
     if val['user_requests'] != [] and val['status'] == 0 and val['user_requests'][0][2] != 0:
-        itchat.send(msg='文件: "%s"\n计算后的价格为 %.2f\n请在60秒内扫描下方的二维码唷' % (val['user_requests'][0][1], val['user_requests'][0][2]), toUserName=val['user_requests'][0][0])
-        itchat.send(msg='可以发送“双面”以双面打印', toUserName=val['user_requests'][0][0])
+        itchat.send(msg='文件计算后的价格为 %.2f\n请在60秒内扫描下方的二维码唷' % (val['user_requests'][0][2]), toUserName=val['user_requests'][0][0])
+        itchat.send(msg='可以在扫码前发送“双面”以双面打印', toUserName=val['user_requests'][0][0])
         itchat.send('@img@QRs/%.2f.jpg' % val['user_requests'][0][2], toUserName=val['user_requests'][0][0])
         logging.info('QR image sent')
         val['submit_time'] = time.time()
@@ -81,9 +93,9 @@ def split_file():
                 pdfFileWriter2.addPage(pageObj2)
             pageObj1 = pdfFileReader.getPage(i * 2)
             pdfFileWriter1.addPage(pageObj1)
-        pdfFileWriter1.write(open((val['user_requests'][0][1])[:-4]+'2.pdf', 'wb'))
-        pdfFileWriter2.write(open((val['user_requests'][0][1])[:-4]+'1.pdf', 'wb'))
-        return True
+        pdfFileWriter1.write(open((val['user_requests'][0][1])[:-4]+'b.pdf', 'wb'))
+        pdfFileWriter2.write(open((val['user_requests'][0][1])[:-4]+'a.pdf', 'wb'))
+        return True 
     
 
 @itchat.msg_register(itchat.content.ATTACHMENT, isFriendChat=True)
@@ -104,7 +116,8 @@ def receive_file(msg):
         logging.warning('user request accepted: "收到文件: "%s"\n正在处理中，请稍后....."' % filename)
         itchat.send(msg='收到文件: "%s"\n正在处理中，请稍后.....' % filename, toUserName=msg.fromUserName)
         # 更新文件名为安全的系统文件名
-        filename = os.path.join('uploads', re.sub(r'[^\w\d-]', '_', filename[:-4]) + '.pdf')
+        filename = os.path.join('uploads/' + str(val['file_number']) + '.pdf')
+        val['file_number'] += 1
         # 下载文件
         msg.text(filename)
         logging.info('file downloaded as <%s>' % filename)
@@ -147,8 +160,9 @@ def receive_print_file(msg):
                 val['status'] = 4
                 if split_file():
                     itchat.send('支付成功，打印正面中....\n待第一面打印完成后，将打印出的纸张直接放到下方纸摞上\n！注意不要改变纸张方向\n放好后发送"继续"以打印反面', toUserName=val['user_requests'][0][0])
-                    os.system('.\\gsview\\gsprint.exe ".\\%s"' % (val['user_requests'][0][1])[:-4]+'1.pdf')
+                    os.system('.\\gsview\\gsprint.exe ".\\%s"' % (val['user_requests'][0][1])[:-4]+'a.pdf')
                     logging.info('payment success as "支付成功，双面打印中...."')
+                    val['dual_submit_time'] = time.time()
                     val['status'] = 3
                 else:
                     itchat.send('文件只有一页，打印任务转换为单面打印', toUserName=val['user_requests'][0][0])
@@ -187,7 +201,7 @@ def receive_cancel_message(msg):
         val['status'] = 2
     if msg.text == '继续' and msg.fromUserName == val['user_requests'][0][0] and val['status'] == 3:
         itchat.send('打印反面中.....', toUserName=val['user_requests'][0][0])
-        os.system('.\\gsview\\gsprint.exe ".\\%s"' % (val['user_requests'][0][1])[:-4]+'2.pdf')
+        os.system('.\\gsview\\gsprint.exe ".\\%s"' % (val['user_requests'][0][1])[:-4]+'b.pdf')
         val['status'] = 0
         del val['user_requests'][0]
 
@@ -211,4 +225,5 @@ while True:
     # 检测交易是否超时
     qr_send()
     expire_test()
+    dual_expire_test()
     
