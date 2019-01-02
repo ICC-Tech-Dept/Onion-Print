@@ -273,7 +273,7 @@ logging.info('itchat activated and running...')
 
 
 while True:
-    time.sleep(0.1)
+    time.sleep(1)
     # 检测交易是否超时
     qr_send()
     expire_test()
