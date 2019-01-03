@@ -1,15 +1,15 @@
 '''
 主程序
 
-试图修复超时bug
 
-正式版V1.1.1
+
+正式版V1.2
 
 '''
 
 __author__ = '-T.K.-'
 __modefier__= 'DessertFox-M'
-__last_modify__ = '12/19/2018'
+__last_modify__ = '1/3/2019'
 
 import itchat
 import time
@@ -44,7 +44,7 @@ transaction_logger.addHandler(logging.FileHandler('payment_%s.log' % datetime.da
 
 def expire_test():
     global val
-    if time.time() > (val['submit_time']+60) and (val['status'] == 1 or val['status'] == 2):
+    if time.time() > (val['submit_time']+60) and (val['status'] == 1 or val['status'] == 2 or val['status'] == 5):
         logging.info('TIMEOUT - user payment timeout')
         itchat.send(msg='操作超时，请重试', toUserName=val['user_requests'][0][0])
         time.sleep(1)
@@ -69,12 +69,11 @@ def qr_send():
     global val
     if val['user_requests'] != [] and val['status'] == 0 and val['user_requests'][0][2] != 0:
         itchat.send(msg='文件计算后的价格为 %.2f\n请在60秒内扫描下方的二维码唷' % (val['user_requests'][0][2]), toUserName=val['user_requests'][0][0])
-        itchat.send(msg='可以在扫码前发送“双面”以双面打印', toUserName=val['user_requests'][0][0])
+        itchat.send(msg='可以在扫码前发送“双面”以双面打印，或“彩色”以彩色打印', toUserName=val['user_requests'][0][0])
         itchat.send('@img@QRs/%.2f.jpg' % val['user_requests'][0][2], toUserName=val['user_requests'][0][0])
         logging.info('QR image sent')
         val['submit_time'] = time.time()
         val['status'] = 1
-        #，或“彩色”以彩色打印
         
 
 def split_file():
@@ -244,8 +243,15 @@ def receive_cancel_message(msg):
         itchat.send('已收到双面打印请求，请尽快扫码', toUserName=msg.fromUserName)
         val['status'] = 2
     if msg.text == '彩色' and msg.fromUserName == val['user_requests'][0][0] and (val['status'] == 1 or val['status'] == 2):
-        itchat.send('已收到彩色打印请求，请尽快扫码', toUserName=msg.fromUserName)
-        val['user_requests'][0][3] = 1
+        itchat.send('已收到彩色打印请求，请稍等', toUserName=msg.fromUserName)
+        pages = PdfFileReader(val['user_requests'][0][1]).getNumPages()
+        price = pages * 0.5
+        val['user_requests'][0] = (val['user_requests'][0][0], val['user_requests'][0][1], price, 1, val['user_requests'][0][4])
+        itchat.send(msg='请在60秒内扫描彩色二维码', toUserName=val['user_requests'][0][0])
+        itchat.send('@img@ColorQRs/%.2f.png' % price, toUserName=val['user_requests'][0][0])
+        logging.info('QR image sent')
+        val['submit_time'] = time.time()
+        val['status'] = 5
     if msg.text == '继续' and msg.fromUserName == val['user_requests'][0][0] and val['status'] == 3:
         itchat.send('打印反面中.....', toUserName=val['user_requests'][0][0])
         os.system('.\\gsview\\gsprint.exe ".\\%s"' % (val['user_requests'][0][1])[:-4]+'b.pdf')
