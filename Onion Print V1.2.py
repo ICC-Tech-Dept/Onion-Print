@@ -8,7 +8,7 @@
 '''
 
 __author__ = '-T.K.-'
-__modefier__= 'DessertFox-M'
+__modefier__ = 'DessertFox-M'
 __last_modify__ = '1/3/2019'
 
 import itchat
@@ -28,11 +28,12 @@ val = {
     'price_per_page': 0.30,
     'user_requests': [],
     'file_number': 0,
-    'default_printer': None,
-    }
+    'color_printer': 'Send To OneNote 2016',
+    'black_printer': 'Microsoft Print to PDF',
+}
 
 # pdf 页码正则规则
-re_pdf_page_pattern = re.compile(r'/Type\s*/Page([^s]|$)', re.MULTILINE|re.DOTALL)
+re_pdf_page_pattern = re.compile(r'/Type\s*/Page([^s]|$)', re.MULTILINE | re.DOTALL)
 
 # log 相关设置
 logging.basicConfig(level=logging.INFO, filename='%s.log' % datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'),
@@ -44,23 +45,23 @@ transaction_logger.addHandler(logging.FileHandler('payment_%s.log' % datetime.da
 
 def expire_test():
     global val
-    if time.time() > (val['submit_time']+60) and (val['status'] == 1 or val['status'] == 2 or val['status'] == 5):
+    if time.time() > (val['submit_time'] + 60) and (val['status'] == 1 or val['status'] == 2):
         logging.info('TIMEOUT - user payment timeout')
         itchat.send(msg='操作超时，请重试', toUserName=val['user_requests'][0][0])
         time.sleep(1)
         val['status'] = 0
         del val['user_requests'][0]
-        
+
 
 def dual_expire_test():
     global val
-    if time.time() > (val['dual_submit_time']+300) and val['status'] == 3:
+    if time.time() > (val['dual_submit_time'] + 300) and val['status'] == 3:
         logging.info('TIMEOUT - user payment timeout')
         itchat.send(msg='操作超时，双面打印已取消', toUserName=val['user_requests'][0][0])
         time.sleep(1)
         val['status'] = 0
         del val['user_requests'][0]
-        
+
 
 def qr_send():
     '''
@@ -74,7 +75,7 @@ def qr_send():
         logging.info('QR image sent')
         val['submit_time'] = time.time()
         val['status'] = 1
-        
+
 
 def split_file():
     global val
@@ -85,17 +86,17 @@ def split_file():
     if num_pages == 1:
         return False
     else:
-        for i in range(0, (num_pages+1)//2):
-            if (i+1) * 2 <= num_pages:
-                pageObj2 = pdfFileReader.getPage((-i * 2 - 1)+(num_pages)//2*2)
+        for i in range(0, (num_pages + 1) // 2):
+            if (i + 1) * 2 <= num_pages:
+                pageObj2 = pdfFileReader.getPage((-i * 2 - 1) + (num_pages) // 2 * 2)
                 pageObj2.rotateClockwise(180)
                 pdfFileWriter2.addPage(pageObj2)
             pageObj1 = pdfFileReader.getPage(i * 2)
             pdfFileWriter1.addPage(pageObj1)
-        pdfFileWriter1.write(open((val['user_requests'][0][1])[:-4]+'b.pdf', 'wb'))
-        pdfFileWriter2.write(open((val['user_requests'][0][1])[:-4]+'a.pdf', 'wb'))
-        return True 
-    
+        pdfFileWriter1.write(open((val['user_requests'][0][1])[:-4] + 'b.pdf', 'wb'))
+        pdfFileWriter2.write(open((val['user_requests'][0][1])[:-4] + 'a.pdf', 'wb'))
+        return True
+
 
 @itchat.msg_register(itchat.content.ATTACHMENT, isFriendChat=True)
 def receive_file(msg):
@@ -104,7 +105,7 @@ def receive_file(msg):
     判断是否系统繁忙和文件类型；计算价格；发送二维码并更新全局变量值
     '''
     global val
-    logging.info('file received:'+msg.fileName)
+    logging.info('file received:' + msg.fileName)
     # 获取文件名称
     filename = msg.fileName
     # 判断文件是否为空或者格式不正确
@@ -136,7 +137,7 @@ def receive_file(msg):
                 num_pages = pdfFileReader.getNumPages()
                 for i in range(0, num_pages):
                     pageObj = pdfFileReader.getPage(i)
-                    if i%2 == 0:
+                    if i % 2 == 0:
                         pageObj.rotateClockwise(90)
                     else:
                         pageObj.rotateClockwise(270)
@@ -149,7 +150,7 @@ def receive_file(msg):
                 itchat.send(msg='有其他人正在支付，可能需要稍等%s分钟噢' % (len(val['user_requests'])), toUserName=msg.fromUserName)
             form = 0
             val['user_requests'].append((msg.fromUserName, filename, price, form, orientation))
-               
+
 
 @itchat.msg_register(itchat.content.SHARING, isMpChat=True)
 def receive_print_file(msg):
@@ -164,11 +165,9 @@ def receive_print_file(msg):
         # 获取金额
         price = float(msg.text[10:-1])
         transaction_logger.info(price)
-        if price >= round(val['user_requests'][0][2],2):
+        if price >= round(val['user_requests'][0][2], 2):
             if val['user_requests'][0][3] == 1:
-                tempprinter = "\\\\server01\\printer01"
-                val['default_printer'] = win32print.GetDefaultPrinter()
-                win32print.SetDefaultPrinter(tempprinter)
+                win32print.SetDefaultPrinter(val['color_printer'])
             if val['status'] == 1:
                 if val['user_requests'][0][4] == 1:
                     pdfFileWriter = PdfFileWriter()
@@ -176,7 +175,7 @@ def receive_print_file(msg):
                     num_pages = pdfFileReader.getNumPages()
                     for i in range(0, num_pages):
                         pageObj = pdfFileReader.getPage(i)
-                        if i%2 == 1:
+                        if i % 2 == 1:
                             pageObj.rotateClockwise(180)
                         pdfFileWriter.addPage(pageObj)
                     pdfFileWriter.write(open(val['user_requests'][0][1], 'wb'))
@@ -185,16 +184,14 @@ def receive_print_file(msg):
                 os.system('.\\gsview\\gsprint.exe ".\\%s"' % val['user_requests'][0][1])
                 val['status'] = 0
                 if val['user_requests'][0][3] == 1:
-                    win32print.SetDefaultPrinter(val['default_printer'])
+                    win32print.SetDefaultPrinter(val['black_printer'])
                 del val['user_requests'][0]
             elif val['status'] == 2:
-                val['status'] = 4
                 if split_file():
                     itchat.send('支付成功，打印正面中....\n待第一面打印完成后，将打印出的纸张直接放到下方纸摞上\n！注意不要改变纸张方向\n放好后发送"继续"以打印反面', toUserName=val['user_requests'][0][0])
-                    os.system('.\\gsview\\gsprint.exe ".\\%s"' % (val['user_requests'][0][1])[:-4]+'a.pdf')
+                    os.system('.\\gsview\\gsprint.exe ".\\%s"' % (val['user_requests'][0][1])[:-4] + 'a.pdf')
                     logging.info('payment success as "支付成功，双面打印中...."')
                     val['dual_submit_time'] = time.time()
-                    val['status'] = 3
                 else:
                     if val['user_requests'][0][4] == 1:
                         pdfFileWriter = PdfFileWriter()
@@ -202,7 +199,7 @@ def receive_print_file(msg):
                         num_pages = pdfFileReader.getNumPages()
                         for i in range(0, num_pages):
                             pageObj = pdfFileReader.getPage(i)
-                            if i%2 == 1:
+                            if i % 2 == 1:
                                 pageObj.rotateClockwise(180)
                             pdfFileWriter.addPage(pageObj)
                         pdfFileWriter.write(open(val['user_requests'][0][1], 'wb'))
@@ -211,7 +208,7 @@ def receive_print_file(msg):
                     os.system('.\\gsview\\gsprint.exe ".\\%s"' % val['user_requests'][0][1])
                     val['status'] = 0
                     if val['user_requests'][0][3] == 1:
-                        win32print.SetDefaultPrinter(val['default_printer'])
+                        win32print.SetDefaultPrinter(val['black_printer'])
                     del val['user_requests'][0]
 
 
@@ -221,7 +218,7 @@ def receive_cancel_message(msg):
     处理取消打印指令或口令
      '''
     global val
-    #判断是否为取消指令或口令
+    # 判断是否为取消指令或口令
     if msg.text == '取消':
         place = -1
         for n, element in enumerate(val['user_requests']):
@@ -247,17 +244,16 @@ def receive_cancel_message(msg):
         pages = PdfFileReader(val['user_requests'][0][1]).getNumPages()
         price = pages * 0.5
         val['user_requests'][0] = (val['user_requests'][0][0], val['user_requests'][0][1], price, 1, val['user_requests'][0][4])
-        itchat.send(msg='请在60秒内扫描彩色二维码', toUserName=val['user_requests'][0][0])
-        itchat.send('@img@ColorQRs/%.2f.png' % price, toUserName=val['user_requests'][0][0])
+        itchat.send(msg=f'文件计算后的价格为 {price}\n请在60秒内扫描彩色二维码', toUserName=val['user_requests'][0][0])
+        itchat.send('@img@ColorQRs/%.2f.jpg' % price, toUserName=val['user_requests'][0][0])
         logging.info('QR image sent')
         val['submit_time'] = time.time()
-        val['status'] = 5
-    if msg.text == '继续' and msg.fromUserName == val['user_requests'][0][0] and val['status'] == 3:
+    if msg.text == '继续' and msg.fromUserName == val['user_requests'][0][0] and val['status'] == 2:
         itchat.send('打印反面中.....', toUserName=val['user_requests'][0][0])
-        os.system('.\\gsview\\gsprint.exe ".\\%s"' % (val['user_requests'][0][1])[:-4]+'b.pdf')
+        os.system('.\\gsview\\gsprint.exe ".\\%s"' % (val['user_requests'][0][1])[:-4] + 'b.pdf')
         val['status'] = 0
         if val['user_requests'][0][3] == 1:
-            win32print.SetDefaultPrinter(currentprinter)
+            win32print.SetDefaultPrinter(val['black_printer'])
         del val['user_requests'][0]
 
 
@@ -281,4 +277,3 @@ while True:
     expire_test()
     dual_expire_test()
     qr_send()
-    
