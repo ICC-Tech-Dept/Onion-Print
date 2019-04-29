@@ -9,7 +9,7 @@
 
 __author__ = '-T.K.-'
 __modefier__ = 'DessertFox-M'
-__last_modify__ = '1/3/2019'
+__last_modify__ = '3/21/2019'
 
 import itchat
 import time
@@ -69,7 +69,7 @@ def qr_send():
     '''
     global val
     if val['user_requests'] != [] and val['status'] == 0 and val['user_requests'][0][2] != 0:
-        itchat.send(msg='文件计算后的价格为 %.2f\n请在60秒内扫描下方的二维码唷' % (val['user_requests'][0][2]), toUserName=val['user_requests'][0][0])
+        itchat.send(msg='文件计算后的价格为%.1f元\n请在60秒内扫描下方的二维码唷' % (val['user_requests'][0][2]), toUserName=val['user_requests'][0][0])
         itchat.send(msg='可以在扫码前发送“双面”以双面打印，或“彩色”以彩色打印', toUserName=val['user_requests'][0][0])
         itchat.send('@img@QRs/%.2f.jpg' % val['user_requests'][0][2], toUserName=val['user_requests'][0][0])
         logging.info('QR image sent')
@@ -147,7 +147,13 @@ def receive_file(msg):
             else:
                 orientation = 0
             if len(val['user_requests']) != 0:
-                itchat.send(msg='有其他人正在支付，可能需要稍等%s分钟噢' % (len(val['user_requests'])), toUserName=msg.fromUserName)
+                Time = len(val['user_requests']) * 45
+                if Time > 60:
+                    minute = Time // 60
+                    second = Time % 60
+                    itchat.send(msg=f'有其他人正在支付，可能需要稍等{minute}分{second}秒噢', toUserName=msg.fromUserName)
+                else:
+                    itchat.send(msg=f'有其他人正在支付，可能需要稍等{Time}秒噢', toUserName=msg.fromUserName)
             form = 0
             val['user_requests'].append((msg.fromUserName, filename, price, form, orientation))
 
@@ -244,7 +250,7 @@ def receive_cancel_message(msg):
         pages = PdfFileReader(val['user_requests'][0][1]).getNumPages()
         price = pages * 0.5
         val['user_requests'][0] = (val['user_requests'][0][0], val['user_requests'][0][1], price, 1, val['user_requests'][0][4])
-        itchat.send(msg=f'文件计算后的价格为 {price}\n请在60秒内扫描彩色二维码', toUserName=val['user_requests'][0][0])
+        itchat.send(msg=f'文件计算后的价格为{price}元\n请在60秒内扫描彩色二维码', toUserName=val['user_requests'][0][0])
         itchat.send('@img@ColorQRs/%.2f.jpg' % price, toUserName=val['user_requests'][0][0])
         logging.info('QR image sent')
         val['submit_time'] = time.time()
