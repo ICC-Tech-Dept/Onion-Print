@@ -22,8 +22,10 @@ import win32api
 # 全局变量，用于两个消息 handler 之间传值
 val = {
     'status': 0,
+    'num_status': 0,
     'submit_time': 0,
     'dual_submit_time': 0,
+    'num_time': 0,
     'price_per_page': 0.10,
     'user_requests': [],
     'file_number': 0,
@@ -67,13 +69,24 @@ def dual_expire_test():
         del val['user_requests'][0]
 
 
+def num_expire_test():
+    global val
+    if time.time() > (val['num_time'] + 45) and val['num_status'] == 1:
+        itchat.send(msg='操作超时，打印已取消', toUserName=val['user_requests'][0][0])
+        time.sleep(1)
+        val['num_status'] = 0
+        del val['user_requests'][0]
+
+
 def qr_send():
     '''
     读取待打印名单发送二维码
     '''
     global val
     if val['user_requests'] != [] and val['status'] == 0 and val['user_requests'][0][5] != 0 and val['user_requests'][0][2] == 0:
-        itchat.send(msg='请发送打印份数(数字):', toUserName=val['user_requests'][0][0])
+        itchat.send(msg='请在45秒内发送打印份数(数字):', toUserName=val['user_requests'][0][0])
+        val['num_status'] = 1
+        val['num_time'] = time.time()
 
     elif val['user_requests'] != [] and val['status'] == 0 and val['user_requests'][0][5] != 0 and val['user_requests'][0][2] != 0:
         price = val['user_requests'][0][2] * val['user_requests'][0][5]
@@ -305,16 +318,19 @@ def receive_cancel_message(msg):
                 place = n
                 break
         if int(msg.text) != float(msg.text) and int(msg.text) > 0:
-            itchat.send('输入数字有误', toUserName=msg.fromUserName)
+            itchat.send('输入数字有误，请重新输入', toUserName=msg.fromUserName)
+            val['num_time'] = time.time()
         else:
             num = int(msg.text)
             if place >= 0:
                 pages = PdfFileReader(val['user_requests'][place][1]).getNumPages()
                 total_pages = pages * num
                 if total_pages > 50:
-                    itchat.send('总页数不可超过50页', toUserName=msg.fromUserName)
+                    itchat.send('总页数不可超过50页，请重新输入', toUserName=msg.fromUserName)
+                    val['num_time'] = time.time()
                 else:
                     val['user_requests'][place] = (val['user_requests'][place][0], val['user_requests'][place][1], val['user_requests'][place][2], val['user_requests'][place][3], val['user_requests'][place][4], num)
+                    val['num_status'] = 0
 
 
 @itchat.msg_register(itchat.content.FRIENDS)
